@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Space Invaders</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            text-align: center;
+        }
+        pre {
+            display: inline-block;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>ASCII Space Invaders</h1>
+    <pre id="gameArea"></pre>
+    <script>
+
+
+const gameArea = document.getElementById('gameArea');
+const gameWidth = 40; // Double the width of the game area
+const gameHeight = 10; // Height of the game area remains the same
+let player = { x: 15, y: gameHeight - 1, width: 3, lives: 3 }; // Player remains the same size
+let enemies = [];
+let bullets = [];
+let score = 0;
+let gameSpeed = 500; // Adjust to control game speed (lower is faster)
+let currentLevel = 1;
+let maxLevels = 3; // Total number of levels
+
+// Initialize game area
+function initializeGameArea() {
+    let gameScreen = '';
+
+    // Clear enemies array
+    enemies = [];
+
+    // Create enemies for the current level
+    for (let i = 0; i < 3 + currentLevel; i++) {
+        let enemyLine = '';
+        for (let j = 0; j < gameWidth; j++) {
+            enemyLine += (j % 5 === 0) ? '*' : ' ';
+        }
+        enemies.push({ x: i * 7, y: 1, width: 5 });
+        gameScreen += enemyLine + '\n';
+    }
+
+    gameArea.textContent = gameScreen;
+}
+
+// Update game area
+function updateGameArea() {
+    moveBullets();
+    moveEnemies();
+    checkCollisions();
+
+    if (enemies.length === 0) {
+        // If no enemies left, proceed to next level
+        currentLevel++;
+        if (currentLevel > maxLevels) {
+            // Player has won the game
+            gameArea.textContent += '\nYou win! Game Over!';
+            return;
+        }
+        initializeGameArea();
+    }
+
+    if (player.lives > 0) {
+        setTimeout(updateGameArea, gameSpeed);
+    } else {
+        gameArea.textContent += '\nGame Over!';
+    }
+
+    renderGameArea();
+}
+
+// Move bullets
+function moveBullets() {
+    bullets.forEach((bullet, index) => {
+        bullet.y-= 2;
+        // Remove bullets that go off-screen
+        if (bullet.y < 0) {
+            bullets.splice(index, 1);
+        }
+    });
+}
+
+// Move enemies
+function moveEnemies() {
+    enemies.forEach(enemy => {
+        enemy.x += 1 + currentLevel; // Increase enemy speed with level
+        if (enemy.x >= gameWidth - enemy.width || enemy.x < 0) {
+            enemy.x = 0;
+            enemy.y += 1;
+        }
+    });
+}
+
+// Check collisions
+function checkCollisions() {
+    bullets.forEach((bullet, bulletIndex) => {
+        enemies.forEach((enemy, enemyIndex) => {
+            if (bullet.x >= enemy.x && bullet.x < enemy.x + enemy.width && bullet.y === enemy.y) {
+                bullets.splice(bulletIndex, 1);
+                enemies.splice(enemyIndex, 1);
+                score += 10;
+            }
+        });
+    });
+
+    enemies.forEach(enemy => {
+        if (enemy.x <= player.x + player.width - 1 && enemy.x + enemy.width >= player.x && enemy.y === player.y) {
+            player.lives--;
+        }
+    });
+}
+
+// Render game area
+function renderGameArea() {
+    let gameScreen = '';
+
+    // Clear previous game screen
+    gameArea.textContent = '';
+
+    // Create enemies
+    for (let i = 0; i < gameHeight; i++) {
+        let line = '';
+        for (let j = 0; j < gameWidth; j++) {
+            let isBullet = false;
+            bullets.forEach(bullet => {
+                if (bullet.y === i && bullet.x === j) {
+                    isBullet = true;
+                }
+            });
+            let isEnemy = false;
+            enemies.forEach(enemy => {
+                if (enemy.y === i && j >= enemy.x && j < enemy.x + enemy.width) {
+                    isEnemy = true;
+                }
+            });
+
+            if (i === player.y && j >= player.x && j < player.x + player.width) {
+                line += '^-^';
+                j += player.width - 1; // Skip rendering the rest of the player ship
+            } else if (isBullet) {
+                line += '|';
+            } else if (isEnemy) {
+                line += '*';
+            } else {
+                line += ' ';
+            }
+        }
+        gameScreen += line + '\n';
+    }
+
+    // Create score, lives, and level info
+    gameScreen += `Score: ${score} Lives: ${player.lives} Level: ${currentLevel}`;
+
+    gameArea.textContent = gameScreen;
+}
+
+// Event listener for player movement
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft' && player.x > 0) {
+        player.x--;
+    } else if (event.key === 'ArrowRight' && player.x < gameWidth - player.width) {
+        player.x++;
+    } else if (event.key === ' ') {
+        bullets.push({ x: player.x + 1, y: player.y - 1 });
+    }
+    renderGameArea();
+});
+
+// Start game
+initializeGameArea();
+updateGameArea();
+
+
+    </script>
+</body>
+</html>
